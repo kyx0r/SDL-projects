@@ -18,11 +18,7 @@ int main(int argc, char* argv[]) {
 		std::cout << "Failed to init application" << std::endl;
 	}
 	
-/* 	SDL_Surface *screen = SDL_GetWindowSurface(window); 
-	Uint32 blue = SDL_MapRGB(screen->format, 0,0,255);   
-	SDL_FillRect(screen,NULL,blue);
-	
-	SDL_UpdateWindowSurface(window); */
+
 	
 	while (true)
 	{

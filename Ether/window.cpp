@@ -43,7 +43,13 @@ namespace ether
 		}
 		std::cout << "Texture created successfully." << std::endl;
 
-
+		
+		SDL_Surface *screen = SDL_GetWindowSurface(window); 
+		Uint32 blue = SDL_MapRGB(screen->format, 100,100,255);   
+		SDL_FillRect(screen,NULL,blue);
+		
+		SDL_UpdateWindowSurface(window);
+		
 /* 		// create a pixel buffer
 		buffer = nullptr;
 
