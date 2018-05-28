@@ -1,6 +1,6 @@
 #OBJS specifies which files to compile as part of the project 
 OBJS = ./*cpp
-HEADS = ./*.h
+HEADS = ./include/*.h
 
 #CC specifies which compiler we're using 
 CC = g++
@@ -23,4 +23,4 @@ OBJ_NAME = Ether.exe
 
 #This is the target that compiles our executable 
 all : 
-	$(CC) $(OBJS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
+	$(CC) $(OBJS) $(HEADS) $(INCLUDE_PATHS) $(LIBRARY_PATHS) $(COMPILER_FLAGS) $(LINKER_FLAGS) -o $(OBJ_NAME)
