@@ -1,4 +1,5 @@
 #include "include/window.h"
+#include "include/sprite.h"
 #include <string.h>
 
 namespace ether
@@ -45,9 +46,13 @@ namespace ether
 
 		
 		SDL_Surface *screen = SDL_GetWindowSurface(window); 
-		Uint32 blue = SDL_MapRGB(screen->format, 100,100,255);   
+		Uint32 blue = SDL_MapRGB(screen->format, 0,0,255);   
+		Uint32 purple = SDL_MapRGB(screen->format, 100,100,255);  
+		Uint32 green = SDL_MapRGB(screen->format, 0,255,0);  
+		Uint32 red = SDL_MapRGB(screen->format, 255,0,0);
 		SDL_FillRect(screen,NULL,blue);
-		
+		Sprite sprite(red, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 48, 64);
+		sprite.draw(screen);
 		SDL_UpdateWindowSurface(window);
 		
 /* 		// create a pixel buffer

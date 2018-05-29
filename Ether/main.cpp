@@ -8,7 +8,7 @@
 //#include <string.h>
 
 #include "include/window.h"
-
+#include "include/sprite.h"
 
 int main(int argc, char* argv[]) {
 	
@@ -17,9 +17,7 @@ int main(int argc, char* argv[]) {
 	if (app.init() == false) {
 		std::cout << "Failed to init application" << std::endl;
 	}
-	
-
-	
+		
 	while (true)
 	{
 		Uint32 start_clock = SDL_GetTicks();
