@@ -1,11 +1,9 @@
-
 #include <SDL2/SDL.h>
 #include <stdio.h>
 #include <iostream>
 #include <cmath>
 #include <cstdlib>
 #include <ctime>
-//#include <string.h>
 
 #include "include/window.h"
 #include "include/sprite.h"
@@ -17,7 +15,7 @@ int main(int argc, char* argv[]) {
 	if (app.init() == false) {
 		std::cout << "Failed to init application" << std::endl;
 	}
-		
+			
 	while (true)
 	{
 		Uint32 start_clock = SDL_GetTicks();
@@ -28,6 +26,7 @@ int main(int argc, char* argv[]) {
 		}	
 		
 		app.Frame_Cap(start_clock, 60);
+		app.Update();
 	}
 	
 	app.close();

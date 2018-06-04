@@ -17,13 +17,14 @@ class Screen
 		SDL_Texture *texture;
 		Uint32 *buffer;
 		Uint32 *bufferBlur;	
+		Uint32 test = 20;
 	
 	public:
 		bool init();
 		void close();
 		bool Event_Loop();
-	//	void background(&window); 
 		void Frame_Cap (Uint32 start_clock, int fps);
+		void Update();
 		
 };
 }

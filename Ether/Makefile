@@ -16,7 +16,7 @@ LIBRARY_PATHS = -L ./SDL2-2.0.8/i686-w64-mingw32/lib
 COMPILER_FLAGS = -w 
 
 #LINKER_FLAGS specifies the libraries we're linking against 
-LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -mwindows -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -static-libgcc
+LINKER_FLAGS = -lmingw32 -lSDL2main -lSDL2 -mwindows -lm -ldinput8 -ldxguid -ldxerr8 -luser32 -lgdi32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lversion -luuid -static-libgcc -static-libstdc++
  
 #OBJ_NAME specifies the name of our exectuable 
 OBJ_NAME = Ether.exe 

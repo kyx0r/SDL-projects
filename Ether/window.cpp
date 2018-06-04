@@ -43,19 +43,8 @@ namespace ether
 			return false;
 		}
 		std::cout << "Texture created successfully." << std::endl;
-
 		
-		SDL_Surface *screen = SDL_GetWindowSurface(window); 
-		Uint32 blue = SDL_MapRGB(screen->format, 0,0,255);   
-		Uint32 purple = SDL_MapRGB(screen->format, 100,100,255);  
-		Uint32 green = SDL_MapRGB(screen->format, 0,255,0);  
-		Uint32 red = SDL_MapRGB(screen->format, 255,0,0);
-		SDL_FillRect(screen,NULL,blue);
-		Sprite sprite(red, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, 48, 64);
-		sprite.draw(screen);
-		SDL_UpdateWindowSurface(window);
-		
-/* 		// create a pixel buffer
+		// create a pixel buffer
 		buffer = nullptr;
 
 		try {
@@ -72,10 +61,35 @@ namespace ether
 			std::cerr << "Failed to allocate memory. Error = " << aerr.what() << std::endl;
 			close();
 			return false;
-		} */
+		}
 
 		return true;
 	}
+	
+	void Screen::Update()
+	{
+		SDL_Surface *screen = SDL_GetWindowSurface(window); 
+		Uint32 blue = SDL_MapRGB(screen->format, 0,0,255);   
+		Uint32 purple = SDL_MapRGB(screen->format, 100,100,255);  
+		Uint32 green = SDL_MapRGB(screen->format, 0,255,0);  
+		Uint32 red = SDL_MapRGB(screen->format, 255,0,0);
+		
+		SDL_FillRect(screen,NULL,blue); 
+		
+		Sprite sprite(red, SCREEN_WIDTH/2, SCREEN_HEIGHT/2, test, test);
+		Sprite obj (green, SCREEN_WIDTH/4, SCREEN_HEIGHT/4, 99, 45);
+		
+		Sprite_Group All_Sprites;
+		
+		All_Sprites.Add(&sprite); 
+		All_Sprites.Add(&obj); 
+		All_Sprites.draw(screen);
+		
+		std::cout << test << std::endl;
+		
+		SDL_UpdateWindowSurface(window);
+	}
+	
 	
 	void Screen::Frame_Cap (Uint32 start_clock, int fps)
 	{
