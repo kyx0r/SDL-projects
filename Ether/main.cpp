@@ -26,7 +26,7 @@ int main(int argc, char* argv[]) {
 		}	
 		
 		app.Frame_Cap(start_clock, 60);
-		app.Update();
+		app.Update(start_clock);
 	}
 	
 	app.close();

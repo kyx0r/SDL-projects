@@ -48,8 +48,8 @@ namespace ether
 	{
 		Arr_Spr.push_back(sprite); //add to the end of vector 
 		Spr_Size = Arr_Spr.size();
-		std::cout << "Size of Sprites: ";
-		std::cout << Spr_Size << std::endl;
+//		std::cout << "Size of Sprites: ";
+//		std::cout << Spr_Size << std::endl;
 	}
 	
 	void Sprite_Group::Remove(Sprite S_obj)
