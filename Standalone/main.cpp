@@ -16,6 +16,23 @@ uint32_t* framebuffer = nullptr;
 typedef int32_t vec2_t[2];
 typedef int32_t vec3_t[3];
 
+typedef struct char_ent
+{
+	uint16_t x;
+	uint16_t y;
+	unsigned char* pix_ptr; //x,y wiil hold locations for this ent
+	uint16_t size;
+	uint32_t color;
+	float scale;
+	char num;
+	struct char_ent* prev;
+	struct char_ent* next;
+	
+} char_ent;
+
+int current_char_index = 0;
+char_ent characters[2000] = {}; //should never be reached. 2000 chars max
+
 #ifndef NDEBUG
 #   define ASSERT(condition, message) \
     do { \
@@ -152,6 +169,16 @@ void SetPixel32(uint32_t* buf, int w, int h, int x, int y, uint32_t pixel)
 	buf[(y * w) + x] = pixel; //32 bit value.
 }
 
+void ReadPixel32(uint32_t* buf, int w, int h, int x, int y, uint32_t &pixel) 
+{
+	if (x < 0 || x >= w || y < 0 || y >= h) 
+	{
+		return;
+	}
+
+	pixel = buf[(y * w) + x]; //32 bit value.
+}
+
 void DebugSurface(SDL_Surface* sur)
 {
 	printf("width: %d \n", sur->w);
@@ -183,6 +210,25 @@ void DrawCharacter(int xpos, int ypos, char num, uint32_t color)
 		return;
 	}
 	
+	char_ent* node = &characters[current_char_index];
+	node->x = xpos;
+	node->y = ypos;
+	node->size = 0;
+	node->color = color;
+	node->scale = 1.0f;
+	node->num = num;
+	if(node->prev)
+	{
+		node->pix_ptr = node->prev->pix_ptr + (node->prev->size * sizeof(uint16_t));
+	}
+	else
+	{
+		node->pix_ptr = &atlas_chars[0]; //reuse the memory as the copy of it resides in surface anyway
+	}
+	
+	node->next = &characters[++current_char_index];	
+	node->next->prev = node;
+	
 	uint32_t* real_pixels = (uint32_t*) texsur->pixels;
 	int num_in_row = texsur->w / 25;
 	int target = 0; 
@@ -201,11 +247,92 @@ void DrawCharacter(int xpos, int ypos, char num, uint32_t color)
 		{
 			if(real_pixels[(y * texsur->w) + x] == 0xFFFFFFFF)
 			{
+				//this can be better if allowed to use full 32/64 bit width
+				*((uint16_t*)node->pix_ptr+node->size) = xpos+(x-xwalk+1); 
+				node->size += sizeof(uint16_t);
+				*((uint16_t*)node->pix_ptr+node->size) = ypos+(y-ywalk+1);
+				node->size += sizeof(uint16_t);
 				SetPixel32(framebuffer, screen->w, screen->h, xpos+(x-xwalk+1), ypos+(y-ywalk+1), color);
 			}
 		}
 	}
 }	
+
+void TranslateCharacter(int x, int y, int index, uint32_t clear_val)
+{
+	//printf("here \n");
+	char_ent* node = &characters[index];
+	for(unsigned char* i = &node->pix_ptr[0]; i<node->pix_ptr + (node->size * sizeof(uint16_t)); i+=8)
+	{
+		uint16_t xpos = *i;
+		uint16_t ypos = *(i+4);
+		*((uint16_t*)i) = xpos + x;
+		*((uint16_t*)i+sizeof(uint16_t)) = ypos + y;
+		SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, clear_val);
+		SetPixel32(framebuffer, screen->w, screen->h, xpos+x, ypos+y, node->color);
+	}
+}
+
+void ScaleCharacter(int index, float scale)
+{
+	//printf("Scalech \n");
+	char_ent* node = &characters[index];
+	node->scale = scale;
+	int s_scale = 24 * scale;
+	
+	SDL_Texture* tmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, 24, 24);
+	ASSERT(tmp, SDL_GetError());	
+	SDL_Texture* dest_tmp = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_TARGET, s_scale, s_scale);
+	ASSERT(dest_tmp, SDL_GetError());	
+	
+	uint32_t tile[30*30] = {}; //make sure we get enough stack space for next func calls too. Actual 24 * 24;
+	uint32_t* real_pixels = (uint32_t*) texsur->pixels;
+	int num_in_row = texsur->w / 25;
+	int target = 0; 
+	
+	for(int i = node->num; i>=num_in_row; i-=num_in_row)
+	{
+		target++;
+	}
+	
+	int ywalk = target * 25;
+	int xwalk = (25 * node->num) - ((num_in_row * target) * 25);
+	int y, x;
+	
+	for(y = ywalk+1; y<ywalk+24; y++)
+	{
+		for(x = xwalk+1; x<xwalk+24; x++)
+		{
+			SetPixel32(tile, 24, 24, (x-xwalk+1), (y-ywalk+1), real_pixels[(y * texsur->w) + x]);
+		}
+	}		
+	
+	ASSERT(!SDL_UpdateTexture(tmp, nullptr, tile, 24 * 4), SDL_GetError());
+	
+	ASSERT(!SDL_SetRenderTarget(renderer, dest_tmp), SDL_GetError());
+	SDL_Rect DestR;
+	DestR.x = 0;
+	DestR.y = 0;
+	DestR.w = s_scale;
+	DestR.h = s_scale;
+	ASSERT(!SDL_RenderCopy(renderer, tmp, nullptr, &DestR), SDL_GetError());
+		
+	uint32_t buf[s_scale*s_scale];
+	ASSERT(!SDL_RenderReadPixels(renderer, nullptr, SDL_PIXELFORMAT_RGBA8888, buf, s_scale*4), SDL_GetError());
+	for(y = 0; y<s_scale; y++)
+	{
+		for(x = 0; x<s_scale; x++)
+		{
+			if(buf[(y * s_scale) + x] == 0xFFFFFFFF)
+			{
+				SetPixel32(framebuffer, screen->w, screen->h, node->x + x, node->y + y, node->color);
+			}
+		}
+	}
+	ASSERT(!SDL_SetRenderTarget(renderer, nullptr), SDL_GetError());
+	SDL_DestroyTexture(tmp);
+	SDL_DestroyTexture(dest_tmp);
+}
 	
 int main(int argc, char* argv[]) 
 {
@@ -217,6 +344,8 @@ int main(int argc, char* argv[])
 	
 	renderer = SDL_CreateRenderer(window, -1,SDL_RENDERER_ACCELERATED | SDL_RENDERER_PRESENTVSYNC);
 	ASSERT(renderer, SDL_GetError());
+	
+	SDL_SetHint(SDL_HINT_RENDER_SCALE_QUALITY, 0);
 	
 	screen = SDL_GetWindowSurface(window); 
 	ASSERT(screen, SDL_GetError());
@@ -238,9 +367,29 @@ int main(int argc, char* argv[])
 	Background_Tx = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, screen->w, screen->h);
 	ASSERT(Background_Tx, SDL_GetError());
 	
+	memset(atlas_chars, 0, 32768); //the texture memory becomes free stack for future.
+	
 	DrawCharacter(50, 50, 1, 0xFF0000FF);
 	
 	DrawCharacter(100, 50, 5, 0x0000FFFF);	
+	
+	TranslateCharacter(100, 0, 1, 0x000000FF);
+	
+	ScaleCharacter(0, 10.0f);
+	
+/* 	TranslateCharacter(10, 0, 1, 0x000000FF);
+	
+	TranslateCharacter(10, 0, 1, 0x000000FF);
+	
+	TranslateCharacter(10, 0, 1, 0x000000FF);
+	
+	
+	TranslateCharacter(10, 0, 1, 0x000000FF);
+	
+	
+	TranslateCharacter(10, 0, 1, 0x000000FF); */
+	
+	//TranslateCharacter(300, 100, 1, 0x00FF00FF);
 		
 /*     for (int i = 0; i < texsur->w * texsur->h; i++)
     {
@@ -318,8 +467,6 @@ int main(int argc, char* argv[])
 		//ASSERT(!SDL_UpdateTexture(atlas, nullptr, atlas_buffer, screen->w * sizeof(uint32_t)), SDL_GetError());
 		//SDL_RenderClear(renderer);
 		
-
-		
 		ASSERT(!SDL_UpdateTexture(Background_Tx, nullptr, framebuffer, screen->w * 4), SDL_GetError());
 		SDL_RenderCopy(renderer, Background_Tx, nullptr, nullptr);
 		
@@ -330,6 +477,8 @@ int main(int argc, char* argv[])
 		SDL_RenderPresent(renderer);
 		
 	}	
+	delete framebuffer;
+	SDL_FreeSurface(texsur);
 	SDL_DestroyTexture(Background_Tx);
 	//SDL_DestroyTexture(atlas);
 	SDL_DestroyRenderer(renderer);
