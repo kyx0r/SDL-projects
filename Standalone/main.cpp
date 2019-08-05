@@ -101,44 +101,6 @@ void Triangle(const vec2_t org, const vec3_t magnitude)
 	SDL_RenderDrawLines(renderer, points, 4);
 }
 
-void Circle(int32_t centreX, int32_t centreY, int32_t radius)
-{
-   const int32_t diameter = (radius * 2);
-
-   int32_t x = (radius - 1);
-   int32_t y = 0;
-   int32_t tx = 1;
-   int32_t ty = 1;
-   int32_t error = (tx - diameter);
-
-   while (x >= y)
-   {
-      //  Each of the following renders an octant of the circle
-      SDL_RenderDrawPoint(renderer, centreX + x, centreY - y);
-      SDL_RenderDrawPoint(renderer, centreX + x, centreY + y);
-      SDL_RenderDrawPoint(renderer, centreX - x, centreY - y);
-      SDL_RenderDrawPoint(renderer, centreX - x, centreY + y);
-      SDL_RenderDrawPoint(renderer, centreX + y, centreY - x);
-      SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
-      SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
-      SDL_RenderDrawPoint(renderer, centreX - y, centreY + x);
-
-      if (error <= 0)
-      {
-         ++y;
-         error += ty;
-         ty += 2;
-      }
-
-      if (error > 0)
-      {
-         --x;
-         tx += 2;
-         error += (tx - diameter);
-      }
-   }
-}
-
 void SetPixel(uint32_t* buf, int w, int h, int x, int y, uint8_t red, uint8_t green, uint8_t blue) 
 {
 	uint32_t color = 0;
@@ -190,6 +152,54 @@ void DebugSurface(SDL_Surface* sur)
 	
 	ASSERT(false, "End of surface dump.");
 }
+
+void Circle(int32_t centreX, int32_t centreY, int32_t radius, uint32_t color)
+{
+   //printf("here \n");
+   const int32_t diameter = (radius * 2);
+
+   int32_t x = (radius - 1);
+   int32_t y = 0;
+   int32_t tx = 1;
+   int32_t ty = 1;
+   int32_t error = (tx - diameter);
+
+   while (x >= y)
+   {
+      //  Each of the following renders an octant of the circle
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX + x, centreY - y, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX + x, centreY + y, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX - x, centreY - y, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX - x, centreY + y, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX + y, centreY - x, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX + y, centreY + x, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX - y, centreY - x, color);
+	  SetPixel32(framebuffer, screen->w, screen->h, centreX - y, centreY + x, color);
+ /*      SDL_RenderDrawPoint(renderer, centreX + x, centreY - y);
+      SDL_RenderDrawPoint(renderer, centreX + x, centreY + y);
+      SDL_RenderDrawPoint(renderer, centreX - x, centreY - y);
+      SDL_RenderDrawPoint(renderer, centreX - x, centreY + y);
+      SDL_RenderDrawPoint(renderer, centreX + y, centreY - x);
+      SDL_RenderDrawPoint(renderer, centreX + y, centreY + x);
+      SDL_RenderDrawPoint(renderer, centreX - y, centreY - x);
+      SDL_RenderDrawPoint(renderer, centreX - y, centreY + x); */
+
+      if (error <= 0)
+      {
+         ++y;
+         error += ty;
+         ty += 2;
+      }
+
+      if (error > 0)
+      {
+         --x;
+         tx += 2;
+         error += (tx - diameter);
+      }
+   }
+}
+
 	//uint32_t* atlas_buffer = new uint32_t[screen->w * screen->h];
 	//memcpy(atlas_buffer, texsur->pixels, screen->w * screen->h);
 	//memset(atlas_buffer, 0, screen->w * screen->h);
@@ -358,16 +368,16 @@ int main(int argc, char* argv[])
 	ASSERT(texsur, SDL_GetError());
 	ASSERT(!SDL_LockSurface(texsur), SDL_GetError());
 	
-	//SDL_Texture* atlas = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, texsur->w, texsur->h);
-	//ASSERT(atlas, SDL_GetError());
-	
 	framebuffer = new uint32_t[screen->w * screen->h];
 	ASSERT(framebuffer, "Malloc failed");
 	
 	Background_Tx = SDL_CreateTexture(renderer, SDL_PIXELFORMAT_RGBA8888, SDL_TEXTUREACCESS_STATIC, screen->w, screen->h);
 	ASSERT(Background_Tx, SDL_GetError());
 	
+	
 	memset(atlas_chars, 0, 32768); //the texture memory becomes free stack for future.
+	
+
 	
 	DrawCharacter(50, 50, 1, 0xFF0000FF);
 	
@@ -375,7 +385,15 @@ int main(int argc, char* argv[])
 	
 	TranslateCharacter(100, 0, 1, 0x000000FF);
 	
-	ScaleCharacter(0, 10.0f);
+		
+		
+	ScaleCharacter(1, 10.0f);
+		
+		
+/* 	clock_t t = clock();
+	t = clock() - t;
+	printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC); */	
+	
 	
 /* 	TranslateCharacter(10, 0, 1, 0x000000FF);
 	
@@ -461,8 +479,8 @@ int main(int argc, char* argv[])
 		
 		FrameCap(start_clock, 60);
 		
-		vec2_t org = {320, 200};
-		vec3_t m = {200, 20, 50}; 
+		//vec2_t org = {320, 200};
+		//vec3_t m = {200, 20, 50}; 
 		
 		//ASSERT(!SDL_UpdateTexture(atlas, nullptr, atlas_buffer, screen->w * sizeof(uint32_t)), SDL_GetError());
 		//SDL_RenderClear(renderer);
@@ -472,7 +490,8 @@ int main(int argc, char* argv[])
 		
 		//SDL_RenderCopyEx(renderer, atlas, &SrcR, &DestR, 0, nullptr, SDL_FLIP_NONE);
 	    //Triangle(org, m);
-		//Circle(100, 100, 50);
+		
+		Circle(100, 100, 50, 0xFFFFFFFF);
 		
 		SDL_RenderPresent(renderer);
 		
