@@ -10,7 +10,7 @@ INCLUDE_PATHS = -I ./SDL2/include
 LIBRARY_PATHS = -L ./lib
 
 WINAPI = -lmingw32 -lsdl -lsetupapi -lkernel32 -lm -ldxguid -ldxerr8 -luser32 -lwinmm -limm32 -lole32 -loleaut32 -lshell32 -lgdi32 -lcomdlg32 -lwinspool 
-WINAPI+= -lcomctl32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lshlwapi -lversion -ldbghelp -lwinpthread -static-libgcc -static-libstdc++
+WINAPI+= -lcomctl32 -luuid -lrpcrt4 -ladvapi32 -lwsock32 -lshlwapi -lversion -ldbghelp -static -lwinpthread -static-libgcc -static-libstdc++
 
 #OBJ_NAME specifies the name of our exectuable 
 OBJ_NAME = Ether.exe 
