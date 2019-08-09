@@ -31,7 +31,6 @@ typedef struct char_ent
 	char num;
 	struct char_ent* prev;
 	struct char_ent* next;
-	
 } char_ent;
 
 int current_char_index = 0;
@@ -200,16 +199,18 @@ void ClearCharacter(int index, uint32_t clear_val)
 	char_ent* node = &characters[index];
 	for(unsigned char* i = &node->pix_ptr[0]; i<node->pix_ptr + (node->size * 2); i+=sizeof(uintptr_t))
 	{
-		uint16_t xpos = *i;
-		uint16_t ypos = *(i+2);
+		uint16_t xpos = *((uint16_t*)i);
+		uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
+		//printf("%d \n", xpos);
+		//printf("%d \n", ypos);
 		SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, clear_val);
 	}
 	if(node->ex_pix_ptr && node->proxy_size)
 	{
 		for(unsigned char* i = node->ex_pix_ptr; i<node->ex_pix_ptr + (node->proxy_size * 2); i+=sizeof(uintptr_t))
 		{
-			uint16_t xpos = *i;
-			uint16_t ypos = *(i+2);
+			uint16_t xpos = *((uint16_t*)i);
+			uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
 			SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, clear_val);
 		}
 	}
@@ -217,7 +218,7 @@ void ClearCharacter(int index, uint32_t clear_val)
 	
 void ScaleCharacter(int index, float scale, double angle)
 {
-	printf("Scalech \n");
+	//printf("Scalech \n");
 	ASSERT(index<MAXCHARS, "MAXCHARS > 2000");
 	char_ent* node = &characters[index];
 	int s_scale = 24 * scale;
@@ -406,8 +407,8 @@ void TranslateCharacter(int x, int y, int index, uint32_t clear_val)
 	char_ent* node = &characters[index];
 	for(unsigned char* i = &node->pix_ptr[0]; i<node->pix_ptr + (node->size * 2); i+=sizeof(uintptr_t))
 	{
-		uint16_t xpos = *i;
-		uint16_t ypos = *(i+2);
+		uint16_t xpos = *((uint16_t*)i);
+		uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
 		*((uint16_t*)i) = xpos + x;
 		*((uint16_t*)i+sizeof(uint8_t)) = ypos + y;
 		SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, clear_val);
@@ -417,8 +418,8 @@ void TranslateCharacter(int x, int y, int index, uint32_t clear_val)
 	{
 		for(unsigned char* i = node->ex_pix_ptr; i<node->ex_pix_ptr + (node->proxy_size * 2); i+=sizeof(uintptr_t))
 		{
-			uint16_t xpos = *i;
-			uint16_t ypos = *(i+2);
+			uint16_t xpos = *((uint16_t*)i);
+			uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
 			*((uint16_t*)i) = xpos + x;
 			*((uint16_t*)i+sizeof(uint8_t)) = ypos + y;
 			SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, clear_val);
@@ -430,37 +431,53 @@ void TranslateCharacter(int x, int y, int index, uint32_t clear_val)
 void DrawString(char* str, int len, int x, int y, int displ, uint32_t color, float scale = 1.0f, double angle = 0.0f)
 {
 	displ = displ * scale;
-	for(int i = 1; i<=len; i++)
+	int _displ = displ * cos(angle*PI/180);
+	for(int i = 0; i<len; i++)
 	{
-		char ch = str[i-1] - 32;
-		if(!angle || i == 1)
+		char ch = str[i] - 32;
+		if(i == 0)
 		{
-			DrawCharacter(x+(displ * i), y, ch, color, scale, angle);
+			DrawCharacter(x, y, ch, color, scale, angle);
 		}
-		else if(angle <= 90.0f && i > 1)
+		else if (angle == 0.0f)
 		{
-			y+=displ;// * sin(angle*PI/180);
-			x-=displ;// * sin(angle*PI/180);
-			DrawCharacter(x+(displ * i), y, ch, color, scale, angle);
+			DrawCharacter(x+(_displ * i), y, ch, color, scale, angle);
 		}
-		else if(angle <= 180.0f && i > 1)
+		else
 		{
-			//y+=displ * cos(angle*PI/180);
-			x-=displ;
-			DrawCharacter(x+(displ * i), y, ch, color, scale, angle);
-		}
-		else if(angle <= 270.0f && i > 1)
-		{
-			y+=displ * sin(angle*PI/180);
-			x+=displ * sin(angle*PI/180);
-		}
-		else if(angle <= 360.0f && i > 1)
-		{
-			y+=displ * sin(angle*PI/180);
-			x+=displ * sin(angle*PI/180);
+			int hyp = (_displ * i) / cos(angle*PI/180);
+			if(!hyp)
+			{
+				hyp = displ * i;
+			}
+			DrawCharacter(x+(_displ * i), y+sin(angle*PI/180) * hyp, ch, color, scale, angle);
 		}
 		
 	}
+}
+
+void UpdateCharacters()
+{
+	for(int i = 0; i<current_char_index; i++)
+	{
+		char_ent* node = &characters[i];
+		for(unsigned char* i = &node->pix_ptr[0]; i<node->pix_ptr + (node->size * 2); i+=sizeof(uintptr_t))
+		{
+			uint16_t xpos = *((uint16_t*)i);
+			uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
+			SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, node->color);
+		}
+		if(node->ex_pix_ptr && node->proxy_size)
+		{
+			for(unsigned char* i = node->ex_pix_ptr; i<node->ex_pix_ptr + (node->proxy_size * 2); i+=sizeof(uintptr_t))
+			{
+				uint16_t xpos = *((uint16_t*)i);
+				uint16_t ypos = *((uint16_t*)i+sizeof(uint8_t));
+				SetPixel32(framebuffer, screen->w, screen->h, xpos, ypos, node->color);
+			}
+		}
+	}
+	
 }
 	
 int main(int argc, char* argv[]) 
@@ -496,61 +513,18 @@ int main(int argc, char* argv[])
 	
 	memset(atlas_chars, 0, 32768); //the texture memory becomes free stack for future.
 	
-
-	
-	//DrawCharacter(50, 50, 66, 0xFF0000FF);
-	
-	DrawString("Hello", 5, 50, 50, 20, 0x0000FFFF, 5.0f, 60.0f);
-	
-/* 	DrawCharacter(50, 50, 5, 0x0000FFFF);	
-	DrawCharacter(100, 50, 6, 0x0000FFFF);
-	DrawCharacter(150, 50, 7, 0x0000FFFF);
-	DrawCharacter(200, 50, 8, 0x0000FFFF); */
-	
-	//DrawCharacter(100, 100, 20, 0x0000FFFF);
-	
-
-	//ClearCharacter(0, 0x0000FFFF);
-
-	
-	//ScaleCharacter(0, 8.0f, 0.0f);
-	
-	//DrawCharacter(300, 300, 25, 0x00FF0FF, 10.0f);
-	
-	
-	
-	//TranslateCharacter(400, 0, 0, 0x000000FF);
-	
-	
-	
-	
-	//DrawCharacter(200, 200, 20, 0x0000FFFF);
-	
-	//TranslateCharacter(100, 0, 0, 0x000000FF);
-	
-	//TranslateCharacter(300, 0, 1, 0x00FF00FF);
-		
-		
 /* 	clock_t t = clock();
 	t = clock() - t;
 	printf ("It took me %d clicks (%f seconds).\n",t,((float)t)/CLOCKS_PER_SEC); */	
 	
+	DrawString("Hello", 5, 250, 250, 20, 0x0000FFFF, 2.0f, 340.0f);
 	
-/* 	TranslateCharacter(10, 0, 1, 0x000000FF);
-	
-	TranslateCharacter(10, 0, 1, 0x000000FF);
-	
-	TranslateCharacter(10, 0, 1, 0x000000FF);
-	
-	
-	TranslateCharacter(10, 0, 1, 0x000000FF);
-	
-	
-	TranslateCharacter(10, 0, 1, 0x000000FF); */
-	
-	//TranslateCharacter(300, 100, 1, 0x00FF00FF);
-	
-	
+	DrawString("Welcome", 7, 50, 50, 20, 0x00FFFFFF, 1.5f, 90.0f);
+		
+	DrawString("Awesome", 7, 500, 250, 20, 0xFF0000FF, 3.0f, 220.0f);
+		
+	DrawString("Project Complete.", 17, 25, 400, 15, 0x3D1752FF, 2.5f, 0.0f);
+			
 	while(true)
 	{
 		uint32_t start_clock = SDL_GetTicks();
@@ -559,25 +533,16 @@ int main(int argc, char* argv[])
 		{
 			break;
 		}
-		
 		FrameCap(start_clock, 60);
 		
-		//vec2_t org = {320, 200};
-		//vec3_t m = {200, 20, 50}; 
+		static double rot = 0.0f;
+		rot += 1.0f;
+		ScaleCharacter(0,4.0f, rot); //for demo rotate the char in place
 		
-		//ASSERT(!SDL_UpdateTexture(atlas, nullptr, atlas_buffer, screen->w * sizeof(uint32_t)), SDL_GetError());
-		//SDL_RenderClear(renderer);
-		
+		UpdateCharacters();	
 		ASSERT(!SDL_UpdateTexture(Background_Tx, nullptr, framebuffer, screen->w * 4), SDL_GetError());
-		SDL_RenderCopy(renderer, Background_Tx, nullptr, nullptr);
-		
-		//SDL_RenderCopyEx(renderer, atlas, &SrcR, &DestR, 0, nullptr, SDL_FLIP_NONE);
-	    //Triangle(org, m);
-		
-		//Circle(100, 100, 50, 0xFFFFFFFF);
-		
+		SDL_RenderCopy(renderer, Background_Tx, nullptr, nullptr);	
 		SDL_RenderPresent(renderer);
-		
 	}	
 	delete framebuffer;
 	SDL_FreeSurface(texsur);
